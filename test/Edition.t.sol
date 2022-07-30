@@ -23,7 +23,7 @@ contract BaseTest is Test {
 
 contract ContractTest is BaseTest, HelperContract {
     function setUp() public {
-        edition = new Edition("NAME", "SYMBOL");
+        edition = new Edition("NAME", "SYMBOL", "ipfs://QmYVsw73haPgm9jK9BopsuKtzuxLANjYn75xeHLpht13D5");
     }
 
     function testName() public {

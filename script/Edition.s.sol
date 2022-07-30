@@ -14,7 +14,7 @@ contract EditionScript is Script {
     function run() external {
         vm.startBroadcast();
 
-        Edition edition = new Edition("FOUNDRY", "SCRIPTING");
+        Edition edition = new Edition("FOUNDRY", "SCRIPTING", "ipfs://QmYVsw73haPgm9jK9BopsuKtzuxLANjYn75xeHLpht13D5");
 
         vm.stopBroadcast();
     }

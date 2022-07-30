@@ -24,9 +24,13 @@ contract Edition is ERC721, IERC2981, Ownable{
 
     bytes32 public merkleRoot;
 
-    constructor(string memory _name, string memory _symbol)
+    string internal baseURI;
+
+    constructor(string memory _name, string memory _symbol, string memory _baseURI)
         ERC721(_name, _symbol)
-    {}
+    {
+        setBaseURI(_baseURI);
+    }
 
     function mint() external payable {}
 
@@ -39,6 +43,14 @@ contract Edition is ERC721, IERC2981, Ownable{
         _safeMint(msg.sender, tokenId);
         _tokenIdCount.increment();
 
+    }
+
+    function setBaseURI(string memory _baseURI) public onlyOwner {
+        baseURI = _baseURI;
+    }
+
+    function _baseURI() internal view virtual override returns (string memory) {
+        return baseURI;
     }
 
     function setMerkleRoot(bytes32 _merkleRoot) public {
