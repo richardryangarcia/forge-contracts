@@ -10,7 +10,7 @@ import {MerkleProof} from
 
 import "forge-std/console2.sol";
 
-contract Edition is ERC721, IERC2981, Ownable{
+contract Edition is ERC721, IERC2981, Ownable {
     using Counters for Counters.Counter;
 
     struct RoyaltyInfo {
@@ -26,10 +26,23 @@ contract Edition is ERC721, IERC2981, Ownable{
 
     string internal baseURI;
 
-    constructor(string memory _name, string memory _symbol, string memory _baseURI)
+    constructor(string memory _name, string memory _symbol, string memory _baseTokenURI)
         ERC721(_name, _symbol)
     {
-        setBaseURI(_baseURI);
+        setBaseURI(_baseTokenURI);
+    }
+
+        /// @inheritdoc	ERC165
+    function supportsInterface(bytes4 interfaceId)
+        public
+        view
+        virtual
+        override(ERC721, IERC165)
+        returns (bool)
+    {
+        return
+            interfaceId == type(IERC2981).interfaceId ||
+            super.supportsInterface(interfaceId);
     }
 
     function mint() external payable {}
@@ -45,8 +58,8 @@ contract Edition is ERC721, IERC2981, Ownable{
 
     }
 
-    function setBaseURI(string memory _baseURI) public onlyOwner {
-        baseURI = _baseURI;
+    function setBaseURI(string memory _baseTokenURI) public onlyOwner {
+        baseURI = _baseTokenURI;
     }
 
     function _baseURI() internal view virtual override returns (string memory) {

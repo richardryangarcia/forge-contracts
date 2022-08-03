@@ -5,6 +5,7 @@ import "forge-std/Test.sol";
 import "forge-std/console2.sol";
 import "murky/Merkle.sol";
 import "../src/Edition.sol";
+import "openzeppelin-contracts/contracts/interfaces/IERC2981.sol";
 
 abstract contract HelperContract {
     Edition edition;
@@ -60,13 +61,25 @@ contract ContractTest is BaseTest, HelperContract {
         bytes32[] memory proof = m.getProof(data, 2); // will get proof for 0x2 value
         edition.setMerkleRoot(root);
 
-        bool verified = m.verifyProof(root, proof, data[2]); // true!
+        // bool verified = m.verifyProof(root, proof, data[2]); // true!
         // vm.expectRevert("Address not in accepted list");
         vm.prank(alice); //
         // console2.log(proof);
         // console2.log(root);
         // console2.log(alice);
-        console2.log("end");
+        // console2.log("end");
         // edition.presaleMint(proof);
+    }
+
+    function testSupportsInterface() public  {
+        bool supportsRoyalty = edition.supportsInterface(type(IERC2981).interfaceId); // 0x2a55205a
+
+        bool supportsErc721 = edition.supportsInterface(type(IERC721).interfaceId); // 0x80ac58cd
+
+        bool supportsErc721Metadata = edition.supportsInterface(type(IERC721Metadata).interfaceId); // 0x5b5e139f
+
+        assertEq(supportsRoyalty, true);
+        assertEq(supportsErc721, true);
+        assertEq(supportsErc721Metadata, true);
     }
 }
