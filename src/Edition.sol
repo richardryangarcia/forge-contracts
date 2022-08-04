@@ -66,7 +66,7 @@ contract Edition is ERC721, IERC2981, Ownable {
         return baseURI;
     }
 
-    function setMerkleRoot(bytes32 _merkleRoot) public {
+    function setMerkleRoot(bytes32 _merkleRoot) public onlyOwner {
         merkleRoot = _merkleRoot;
     }
 
