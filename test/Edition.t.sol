@@ -47,29 +47,29 @@ contract ContractTest is BaseTest, HelperContract {
         assertEq(edition.merkleRoot(), root);
     }
 
-    function testPresaleMintInvalidProof() public {
-        Merkle m = new Merkle();
-        bytes32[] memory data = new bytes32[](4);
-        // address alice = mkaddr("alice");
-        address alice = address(0x5dad7600C5D89fE3824fFa99ec1c3eB8BF3b0501);
-        bytes32 b = bytes32(uint256(uint160(alice)));
-        data[0] = bytes32("0x0");
-        data[1] = bytes32("0x1");
-        data[2] = b;
-        data[3] = bytes32("0x3");
-        bytes32 root = m.getRoot(data);
-        bytes32[] memory proof = m.getProof(data, 2); // will get proof for 0x2 value
-        edition.setMerkleRoot(root);
+    // function testPresaleMintInvalidProof() public {
+    //     // Merkle m = new Merkle();
+    //     bytes32[] memory data = new bytes32[](4);
+    //     // address alice = mkaddr("alice");
+    //     address alice = address(0x5dad7600C5D89fE3824fFa99ec1c3eB8BF3b0501);
+    //     bytes32 b = bytes32(uint256(uint160(alice)));
+    //     data[0] = bytes32("0x0");
+    //     data[1] = bytes32("0x1");
+    //     data[2] = b;
+    //     data[3] = bytes32("0x3");
+    //     // bytes32 root = m.getRoot(data);
+    //     // bytes32[] memory proof = m.getProof(data, 2); // will get proof for 0x2 value
+    //     // edition.setMerkleRoot(root);
 
-        // bool verified = m.verifyProof(root, proof, data[2]); // true!
-        // vm.expectRevert("Address not in accepted list");
-        vm.prank(alice); //
-        // console2.log(proof);
-        // console2.log(root);
-        // console2.log(alice);
-        // console2.log("end");
-        // edition.presaleMint(proof);
-    }
+    //     // bool verified = m.verifyProof(root, proof, data[2]); // true!
+    //     // vm.expectRevert("Address not in accepted list");
+    //     // vm.prank(alice); //
+    //     // console2.log(proof);
+    //     // console2.log(root);
+    //     // console2.log(alice);
+    //     // console2.log("end");
+    //     // edition.presaleMint(proof);
+    // }
 
     function testSupportsInterface() public  {
         bool supportsRoyalty = edition.supportsInterface(type(IERC2981).interfaceId); // 0x2a55205a
@@ -82,4 +82,5 @@ contract ContractTest is BaseTest, HelperContract {
         assertEq(supportsErc721, true);
         assertEq(supportsErc721Metadata, true);
     }
+
 }

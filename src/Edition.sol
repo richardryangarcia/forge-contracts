@@ -10,14 +10,14 @@ import {MerkleProof} from
 
 import "forge-std/console2.sol";
 
-
+/// @title An NFT edition contract
+/// @author Richard Ryan @ryanoffthewall
 contract Edition is ERC721, IERC2981, Ownable {
+    using Strings for uint256;
     using Counters for Counters.Counter;
 
-    struct RoyaltyInfo {
-        address receiver;
-        uint96 royaltyFraction;
-    }
+    // ===== Variables =====
+    string internal baseTokenURI;
 
     RoyaltyInfo private _royalties;
 
@@ -25,15 +25,45 @@ contract Edition is ERC721, IERC2981, Ownable {
 
     bytes32 public merkleRoot;
 
-    string internal baseURI;
 
+    // ===== Structs =====
+    struct RoyaltyInfo {
+        address receiver;
+        uint96 royaltyFraction;
+    }
+
+    // ===== Constructor =====
     constructor(string memory _name, string memory _symbol, string memory _baseTokenURI)
         ERC721(_name, _symbol)
     {
         setBaseURI(_baseTokenURI);
     }
 
-        /// @inheritdoc	ERC165
+    // ===== Token URI =====
+
+    /// @dev Sets base content URI for entire collection
+    /// @param _baseTokenURI Content uri i.e. (ipfs://)
+    function setBaseURI(string memory _baseTokenURI) public onlyOwner {
+        baseTokenURI = _baseTokenURI;
+    }
+
+    /// @dev Used to form token URI
+    /// @return Base content uri 
+    function _baseURI() internal view virtual override returns (string memory) {
+        return baseTokenURI;
+    }
+
+    /**
+     * @dev See {IERC721Metadata-tokenURI}.
+     */
+    function tokenURI(uint256 tokenId) public view virtual override returns (string memory) {
+        _requireMinted(tokenId);
+
+        string memory baseURI = _baseURI();
+        return bytes(baseURI).length > 0 ? string(abi.encodePacked(baseURI, tokenId.toString())) : "";
+    }
+
+    /// @inheritdoc	ERC165
     function supportsInterface(bytes4 interfaceId)
         public
         view
@@ -59,13 +89,6 @@ contract Edition is ERC721, IERC2981, Ownable {
 
     }
 
-    function setBaseURI(string memory _baseTokenURI) public onlyOwner {
-        baseURI = _baseTokenURI;
-    }
-
-    function _baseURI() internal view virtual override returns (string memory) {
-        return baseURI;
-    }
 
     function setMerkleRoot(bytes32 _merkleRoot) public onlyOwner {
         merkleRoot = _merkleRoot;
