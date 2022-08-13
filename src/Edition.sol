@@ -17,7 +17,9 @@ contract Edition is ERC721, IERC2981, Ownable {
     using Counters for Counters.Counter;
 
     // ===== Variables =====
-    string internal baseTokenURI;
+    string public baseTokenURI;
+
+    uint256 public constant MAX_SUPPLY = 2;
 
     RoyaltyInfo private _royalties;
 
@@ -32,11 +34,18 @@ contract Edition is ERC721, IERC2981, Ownable {
         uint96 royaltyFraction;
     }
 
+    // // ===== Modifiers =====
+    // modifier verifyMaxSupply(uint256 _quantity) {
+    //     require(_quantity + _tokenIdCount.current() <= MAX_SUPPLY, "Collection sold out");
+    //     _;
+    // }
+
     // ===== Constructor =====
     constructor(string memory _name, string memory _symbol, string memory _baseTokenURI)
         ERC721(_name, _symbol)
     {
         setBaseURI(_baseTokenURI);
+        console2.log(msg.sender);
     }
 
     // ===== Token URI =====
@@ -76,7 +85,19 @@ contract Edition is ERC721, IERC2981, Ownable {
             super.supportsInterface(interfaceId);
     }
 
-    function mint() external payable {}
+    function mint() external payable {
+        uint256 tokenId = _tokenIdCount.current();
+        require(tokenId < MAX_SUPPLY, "Collection sold out");
+        _safeMint(msg.sender, tokenId);
+        _tokenIdCount.increment();
+    }
+
+    function mintTo(address to, uint256 _quantity) external payable {
+        uint256 tokenId = _tokenIdCount.current();
+        require(tokenId < MAX_SUPPLY, "Collection sold out");
+        _safeMint(msg.sender, tokenId);
+        _tokenIdCount.increment();
+    }
 
     function presaleMint(bytes32[] calldata _proof) external payable {
         require(
@@ -84,11 +105,11 @@ contract Edition is ERC721, IERC2981, Ownable {
             "Address not in accepted list"
         );
         uint256 tokenId = _tokenIdCount.current();
+        require(tokenId < MAX_SUPPLY, "Collection sold out");
         _safeMint(msg.sender, tokenId);
         _tokenIdCount.increment();
 
     }
-
 
     function setMerkleRoot(bytes32 _merkleRoot) public onlyOwner {
         merkleRoot = _merkleRoot;
