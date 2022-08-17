@@ -51,7 +51,6 @@ contract ContractTest is BaseTest, HelperContract {
         edition.setBaseURI("http://new-base-url/");
         string memory newUri = edition.baseTokenURI();
         assertEq(newUri, "http://new-base-url/");
-
     }
 
     function testSetMerkleRoot() public {
