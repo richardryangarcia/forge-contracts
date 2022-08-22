@@ -7,6 +7,7 @@ import "murky/Merkle.sol";
 import "../src/Edition.sol";
 import "openzeppelin-contracts/contracts/interfaces/IERC2981.sol";
 
+
 abstract contract HelperContract {
     Edition edition;
 }
@@ -26,6 +27,7 @@ contract BaseTest is Test {
 // 0xb4c79dab8f259c7aee6e5b2aa729821864227e84
 
 contract ContractTest is BaseTest, HelperContract {
+    address bob = address(0x1778);
     function setUp() public {
         edition = new Edition("NAME", "SYMBOL", "ipfs://QmYVsw73haPgm9jK9BopsuKtzuxLANjYn75xeHLpht13D5");
     }
@@ -53,41 +55,28 @@ contract ContractTest is BaseTest, HelperContract {
         assertEq(newUri, "http://new-base-url/");
     }
 
-    function testSetMerkleRoot() public {
-        Merkle m = new Merkle();
-        bytes32[] memory data = new bytes32[](4);
-        data[0] = bytes32("0x0");
-        data[1] = bytes32("0x1");
-        data[2] = bytes32("0x2");
-        data[3] = bytes32("0x3");
-        bytes32 root = m.getRoot(data);
-        edition.setMerkleRoot(root);
-        assertEq(edition.merkleRoot(), root);
-    }
+    // function testSetMerkleRoot() public {
+    //     address alice = address(0x5dad7600C5D89fE3824fFa99ec1c3eB8BF3b0501);
+    //     address bob = address(0x3440326f551B8A7ee198cEE35cb5D517f2d296a2);
+    //     address candice = address(0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266);
 
-    function testPresaleMintInvalidProof() public {
-        Merkle m = new Merkle();
-        bytes32[] memory data = new bytes32[](4);
-        // address alice = mkaddr("alice");
-        address alice = address(0x5dad7600C5D89fE3824fFa99ec1c3eB8BF3b0501);
-        bytes32 b = bytes32(uint256(uint160(alice)));
-        data[0] = bytes32("0x0");
-        data[1] = bytes32("0x1");
-        data[2] = b;
-        data[3] = bytes32("0x3");
-         bytes32 root = m.getRoot(data);
-         bytes32[] memory proof = m.getProof(data, 2); // will get proof for 0x2 value
-         edition.setMerkleRoot(root);
+    //     Merkle m = new Merkle();
+    //     bytes32[] memory data = new bytes32[](3);
+    //     data[0] = bytes32(uint256(uint160(alice)));
+    //     data[1] = bytes32(uint256(uint160(bob)));
+    //     data[2] = bytes32(uint256(uint160(candice)));
+    //     bytes32 root = m.getRoot(data);
 
-    //     // bool verified = m.verifyProof(root, proof, data[2]); // true!
-        vm.expectRevert("Address not in accepted list");
-        vm.prank(alice);
-    //     // console2.log(proof);
-    //     // console2.log(root);
-    //     // console2.log(alice);
-    //     // console2.log("end");
-        edition.presaleMint(proof);
-    }
+    //     assertEq(edition.merkleRoot(), root);
+    //     // bytes32[] memory proof = m.getProof(data, 2); // will get proof for 0x2 value
+
+    //     bytes32[] memory proof = new bytes32[](1);
+    //     proof[0] = bytes32(0x38baca365d4813ff51600e5a271bb8f003e270ec24773ef307257c0e7fb97ccf);
+    //     console2.logBytes32(proof[0]);
+
+    //     vm.prank(candice);
+    //     edition.presaleMint(proof);
+    // }
 
     function testSupportsInterface() public  {
         bool supportsRoyalty = edition.supportsInterface(type(IERC2981).interfaceId); // 0x2a55205a

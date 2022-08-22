@@ -7,6 +7,7 @@ import "openzeppelin-contracts/contracts/access/Ownable.sol";
 import "openzeppelin-contracts/contracts/security/ReentrancyGuard.sol";
 import {Counters} from "openzeppelin-contracts/contracts/utils/Counters.sol";
 import {MerkleProof} from "openzeppelin-contracts/contracts/utils/cryptography/MerkleProof.sol";
+import "forge-std/console2.sol";
 
 /// @title An NFT edition contract
 /// @author Richard Ryan @ryanoffthewall
@@ -144,13 +145,15 @@ contract Edition is ERC721, IERC2981, Ownable, ReentrancyGuard  {
     }
 
     /// @dev Pre sale mint
-    function presaleMint(bytes32[] calldata _proof) external payable verifyAllowList(_proof) verifyMaxSupply verifyPublicMints verifyPresaleMax verifyEthAmount nonReentrant {
+    // function presaleMint(bytes32[] calldata _proof) external payable verifyAllowList(_proof) verifyMaxSupply verifyPublicMints verifyPresaleMax verifyEthAmount nonReentrant {
+    function presaleMint(bytes32[] calldata _proof) external payable {
+        console2.logAddress(msg.sender);
+        require(MerkleProof.verify(_proof, merkleRoot, keccak256(abi.encodePacked(msg.sender))), "Address not in allow list");
         _safeMint(msg.sender, _tokenIdCount.current());
         _tokenIdCount.increment();
-
     }
 
-    function adminMint() external payable onlyOwner {}
+    function admint() external payable onlyOwner {}
 
     // ===== Allowlist =====
     function setMerkleRoot(bytes32 _merkleRoot) public onlyOwner {

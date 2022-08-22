@@ -19,16 +19,24 @@ contract Bet is Ownable, ReentrancyGuard {
     Status private status;
 
     struct Pick {
-        bool winner;
         string name;
-        int odds;
-        uint256 totalBet;
-        Counters.Counter betters;
+        // string imageUrl;
+        bool winner;
+        uint256 odds;
+        uint256 totalBetAmount;
+        uint256 totalBetterCount;
+        // address payable[] betterAddresses;
     }
 
     Pick[2] picks;
+    Counters.Counter private pickOneBetCount;
+    Counters.Counter private pickTwoBetCount;
+    mapping(address => uint256) pickOneBetAmounts;
+    mapping(address => uint256) pickTwoBetAmounts;
 
-    constructor() {
+    constructor(string memory _pickOne, string memory _pickTwo) {
+        picks[0] = Pick(_pickOne, false, 0, 0, pickOneBetCount.current());
+        picks[1] = Pick(_pickTwo, false, 0, 0, pickTwoBetCount.current());
         setStatus(Status.Open);
     }
 
@@ -36,22 +44,44 @@ contract Bet is Ownable, ReentrancyGuard {
         status = _status;
     }
 
-    // create matchup
-
-    function createMatchup() public onlyOwner {
-
+    function updateOdds(uint256 pickOneOdds, uint256 pickTwoOdds) public onlyOwner {
+        picks[0].odds = pickOneOdds;
+        picks[1].odds = pickTwoOdds;
     }
 
     function setWinner(uint256 _winner) public onlyOwner {
         require(status == Status.Closed, "Status must be closed to set winner");
         require(_winner == 1 || _winner == 2, "Winner selection must be 1 or 2");
         if (_winner == 1) {
-
+            // calculate earnings and pay out
         } else {
 
         }
+    }
 
+    function handlePayout() internal {
 
+    }
+
+    function placeBet(uint256 _pick, uint256 _amount) external {
+        require(status == Status.Open, "This contract is no longer taking bets");
+        require(_pick == 1 || _pick == 2, "Pick selection must be 1 or 2");
+        require(_amount > 0, "Bet amount must be greater than 0");
+        if (_pick == 1) {
+            picks[0].totalBetAmount += _amount;
+            if (pickOneBetAmounts[msg.sender] == 0) { // handle new better address
+                pickOneBetCount.increment();
+                picks[0].totalBetterCount = pickOneBetCount.current();
+            }
+            pickOneBetAmounts[msg.sender] += _amount;
+        } else {
+            picks[1].totalBetAmount += _amount;
+            if (pickTwoBetAmounts[msg.sender] == 0) { // handle new better address
+                pickTwoBetCount.increment();
+                picks[1].totalBetterCount = pickTwoBetCount.current();
+            }
+            pickTwoBetAmounts[msg.sender] += _amount;
+        }
     }
 
     /**
