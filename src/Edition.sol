@@ -99,7 +99,12 @@ contract Edition is ERC721, IERC2981, Ownable, ReentrancyGuard  {
         setBaseURI(_baseTokenURI);
     }
 
-    /// @inheritdoc	ERC165
+    // ===== Interface Detection =====
+
+    /**
+     * @dev See {ERC165} 
+     * @param interfaceId interface id to check compatibility for
+     */
     function supportsInterface(bytes4 interfaceId)
         public
         view
@@ -112,22 +117,27 @@ contract Edition is ERC721, IERC2981, Ownable, ReentrancyGuard  {
             super.supportsInterface(interfaceId);
     }
 
-    // ===== Token URI =====
+    // ===== Metadata =====
 
-    /// @dev Sets base content URI for entire collection
-    /// @param _baseTokenURI Content uri i.e. (ipfs://)
+    /**
+     * @dev Sets base content URI for entire collection
+     * @param _baseTokenURI Content uri i.e. (ipfs://)
+     */
     function setBaseURI(string memory _baseTokenURI) public onlyOwner {
         baseTokenURI = _baseTokenURI;
     }
 
-    /// @dev Used to form token URI
-    /// @return Base content uri 
+    /**
+     * @dev Used to form token URI
+     * @return Base content uri 
+     */
     function _baseURI() internal view virtual override returns (string memory) {
         return baseTokenURI;
     }
 
     /**
      * @dev See {IERC721Metadata-tokenURI}.
+     * @param tokenId reference token id
      */
     function tokenURI(uint256 tokenId) public view virtual override returns (string memory) {
         _requireMinted(tokenId);
@@ -137,14 +147,20 @@ contract Edition is ERC721, IERC2981, Ownable, ReentrancyGuard  {
     }
 
     // ===== Mints =====
-    /// @dev Public sale mint
+
+    /**
+     * @dev Public sale mint
+     */ 
     function mint() external payable verifyMaxSupply verifyPublicMints verifyMaxPerWallet verifyEthAmount nonReentrant {
         uint256 currentId = _tokenIdCount.current();
         _tokenIdCount.increment();
         _safeMint(msg.sender, currentId);
     }
 
-    /// @dev Pre sale mint
+    /**
+     * @dev Pre sale mint
+     * @param _proof merkle tree proof for allow listed address
+     */ 
     // function presaleMint(bytes32[] calldata _proof) external payable verifyAllowList(_proof) verifyMaxSupply verifyPublicMints verifyPresaleMax verifyEthAmount nonReentrant {
     function presaleMint(bytes32[] calldata _proof) external payable {
         require(MerkleProof.verify(_proof, merkleRoot, keccak256(abi.encodePacked(msg.sender))), "Address not in allow list");
@@ -154,6 +170,11 @@ contract Edition is ERC721, IERC2981, Ownable, ReentrancyGuard  {
         _safeMint(msg.sender, currentId);
     }
 
+
+    /**
+     * @dev Admin mint. Used to mint from team reserves
+     * @param recipients list of addresses to mint to. One address per mint.
+     */
     function admint(address[] memory recipients) external payable onlyOwner verifyTeamMints(recipients.length) {
         for (uint256 i = 0; i < recipients.length; i++) {
             uint256 currentId = _tokenIdCount.current();
@@ -163,17 +184,32 @@ contract Edition is ERC721, IERC2981, Ownable, ReentrancyGuard  {
     }
 
     // ===== Allowlist =====
+
+    /**
+     * @dev Set allow list merkle root
+     * @param _merkleRoot new allow list root hash
+     */
     function setMerkleRoot(bytes32 _merkleRoot) public onlyOwner {
         merkleRoot = _merkleRoot;
     }
 
 
     // ===== Royalties =====
+
+    /**
+     * @dev Sets contract wide royalties
+     * @param recipient recipient wallet address
+     * @param value percentage of sale price recipient is entitled to
+     */
     function _setRoyalties(address recipient, uint256 value) internal {
         require(value <= 10000, "Royalty Fraction Too high");
         _royalties = RoyaltyInfo(recipient, uint24(value));
     }
 
+    /**
+     * @dev See {EIP-2981}. TokenId not needed since royalties will be the same for each token
+     * @param _salePrice sale price to calculate recipient shares
+     */
     function royaltyInfo(uint256, uint256 _salePrice)
         public
         view
@@ -189,11 +225,19 @@ contract Edition is ERC721, IERC2981, Ownable, ReentrancyGuard  {
     }
 
     // ===== Sale Config =====
+
+    /**
+     * @dev checks if presale is currently active
+     * @return true if active
+     */
     function _presaleActive() internal view returns (bool) {
         return saleConfig.presaleStart <= block.timestamp && block.timestamp < saleConfig.presaleEnd;
     }
 
-
+    /**
+     * @dev checks if public sale is currently active
+     * @return true if active
+     */
     function _publicSaleActive() internal view returns (bool) {
         return saleConfig.publicStart <= block.timestamp;
     }
