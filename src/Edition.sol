@@ -29,7 +29,7 @@ contract Edition is ERC721, IERC2981, Ownable, ReentrancyGuard  {
     // ===== Structs =====
     struct RoyaltyInfo {
         address receiver;
-        uint96 royaltyFraction;
+        uint96 royaltyAmount;
     }
 
     struct SaleConfig {
@@ -217,11 +217,9 @@ contract Edition is ERC721, IERC2981, Ownable, ReentrancyGuard  {
         override
         returns (address, uint256)
     {
-        RoyaltyInfo memory royalty = _royalties;
+        uint256 royaltyAmount = (_salePrice * _royalties.royaltyAmount) / 10000;
 
-        uint256 royaltyAmount = (_salePrice * royalty.royaltyFraction) / 10000;
-
-        return (royalty.receiver, royaltyAmount);
+        return (_royalties.receiver, royaltyAmount);
     }
 
     // ===== Sale Config =====
