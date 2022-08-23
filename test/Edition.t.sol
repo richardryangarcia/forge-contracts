@@ -13,8 +13,9 @@ abstract contract HelperContract {
 }
 
 contract BaseTest is Test {
+    // 0xb4c79dab8f259c7aee6e5b2aa729821864227e84 owner
+
     // 0x5dad7600c5d89fe3824ffa99ec1c3eb8bf3b0501 alice
-    // 0x5dad7600C5D89fE3824fFa99ec1c3eB8BF3b0501 checksummed alice
     function mkaddr(string memory name) public returns (address) {
         address addr =
             address(uint160(uint256(keccak256(abi.encodePacked(name)))));
@@ -22,9 +23,6 @@ contract BaseTest is Test {
         return addr;
     }
 }
-
-// owner address
-// 0xb4c79dab8f259c7aee6e5b2aa729821864227e84
 
 contract ContractTest is BaseTest, HelperContract {
     address bob = address(0x1778);
@@ -55,28 +53,58 @@ contract ContractTest is BaseTest, HelperContract {
         assertEq(newUri, "http://new-base-url/");
     }
 
-    // function testSetMerkleRoot() public {
-    //     address alice = address(0x5dad7600C5D89fE3824fFa99ec1c3eB8BF3b0501);
-    //     address bob = address(0x3440326f551B8A7ee198cEE35cb5D517f2d296a2);
-    //     address candice = address(0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266);
+    function testMerkleProof() public {
+        bytes32 encodedAddress = bytes32(keccak256(abi.encodePacked(bob)));
 
-    //     Merkle m = new Merkle();
-    //     bytes32[] memory data = new bytes32[](3);
-    //     data[0] = bytes32(uint256(uint160(alice)));
-    //     data[1] = bytes32(uint256(uint160(bob)));
-    //     data[2] = bytes32(uint256(uint160(candice)));
-    //     bytes32 root = m.getRoot(data);
+        // define allow list
+        bytes32[] memory data = new bytes32[](4);
+        data[0] = bytes32("0x0");
+        data[1] = encodedAddress;
+        data[2] = bytes32("0x2");
+        data[3] = bytes32("0x3");
 
-    //     assertEq(edition.merkleRoot(), root);
-    //     // bytes32[] memory proof = m.getProof(data, 2); // will get proof for 0x2 value
+        // set merkle root
+        Merkle m = new Merkle();
+        bytes32 root = m.getRoot(data);
+        edition.setMerkleRoot(root);
 
-    //     bytes32[] memory proof = new bytes32[](1);
-    //     proof[0] = bytes32(0x38baca365d4813ff51600e5a271bb8f003e270ec24773ef307257c0e7fb97ccf);
-    //     console2.logBytes32(proof[0]);
+        // verify proof is valid 
+        bytes32[] memory proof = m.getProof(data, 1); 
+        bool verifiedProof = m.verifyProof(root, proof, data[1]);
+        assertEq(verifiedProof, true);
 
-    //     vm.prank(candice);
-    //     edition.presaleMint(proof);
-    // }
+        // try and mint via presale allowlist
+        vm.prank(bob);
+        edition.presaleMint(proof);
+    }
+
+    function testCannotMintViaAllowList() public {
+        bytes32 encodedAddress = bytes32(keccak256(abi.encodePacked(bob)));
+
+        // define allow list
+        bytes32[] memory data = new bytes32[](4);
+        data[0] = bytes32("0x0");
+        data[1] = encodedAddress;
+        data[2] = bytes32("0x2");
+        data[3] = bytes32("0x3");
+
+        // set merkle root
+        Merkle m = new Merkle();
+        bytes32 root = m.getRoot(data);
+        edition.setMerkleRoot(root);
+
+        // verify proof is valid 
+        bytes32[] memory proof = m.getProof(data, 1); 
+        bool verifiedProof = m.verifyProof(root, proof, data[1]);
+        assertEq(verifiedProof, true);
+
+        // try and mint via presale allowlist
+        vm.expectRevert("Address not in allow list");
+        edition.presaleMint(proof);
+    }
+
+
+
 
     function testSupportsInterface() public  {
         bool supportsRoyalty = edition.supportsInterface(type(IERC2981).interfaceId); // 0x2a55205a

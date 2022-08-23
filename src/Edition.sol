@@ -15,6 +15,29 @@ contract Edition is ERC721, IERC2981, Ownable, ReentrancyGuard  {
     using Strings for uint256;
     using Counters for Counters.Counter;
 
+    // ===== Constants =====
+    uint256 public constant MAX_SUPPLY = 100;
+
+    uint256 public constant MAX_PER_WALLET = 5;
+
+    uint256 public constant PRESALE_MAX = 2;
+
+    uint256 public constant TEAM_RESERVE = 10;
+
+    uint256 public constant SALE_PRICE = .69 ether;
+
+    // ===== Structs =====
+    struct RoyaltyInfo {
+        address receiver;
+        uint96 royaltyFraction;
+    }
+
+    struct SaleConfig {
+        uint64 presaleStart;
+        uint64 presaleEnd;
+        uint64 publicStart;
+    }
+
     // ===== Variables =====
     string public baseTokenURI;
 
@@ -29,30 +52,6 @@ contract Edition is ERC721, IERC2981, Ownable, ReentrancyGuard  {
     SaleConfig public saleConfig;
 
     RoyaltyInfo private _royalties;
-
-    // ===== Constants =====
-    uint256 public constant MAX_SUPPLY = 100;
-
-    uint256 public constant MAX_PER_WALLET = 5;
-
-    uint256 public constant PRESALE_MAX = 2;
-
-    uint256 public constant TEAM_RESERVE = 10;
-
-    uint256 public constant SALE_PRICE = .69 ether;
-
-
-    // ===== Structs =====
-    struct RoyaltyInfo {
-        address receiver;
-        uint96 royaltyFraction;
-    }
-
-    struct SaleConfig {
-        uint64 presaleStart;
-        uint64 presaleEnd;
-        uint64 publicStart;
-    }
 
     // ===== Modifiers =====
     modifier verifyMaxPerWallet() {
@@ -75,8 +74,8 @@ contract Edition is ERC721, IERC2981, Ownable, ReentrancyGuard  {
         _;
     }
 
-    modifier verifyTeamMints() {
-        require(_teamMintCount.current() < TEAM_RESERVE, "Team reserve reached");
+    modifier verifyTeamMints(uint256 quantity) {
+        require(_teamMintCount.current() + quantity< TEAM_RESERVE, "Team reserve reached");
         _;
     }
 
@@ -140,20 +139,28 @@ contract Edition is ERC721, IERC2981, Ownable, ReentrancyGuard  {
     // ===== Mints =====
     /// @dev Public sale mint
     function mint() external payable verifyMaxSupply verifyPublicMints verifyMaxPerWallet verifyEthAmount nonReentrant {
-        _safeMint(msg.sender, _tokenIdCount.current());
+        uint256 currentId = _tokenIdCount.current();
         _tokenIdCount.increment();
+        _safeMint(msg.sender, currentId);
     }
 
     /// @dev Pre sale mint
     // function presaleMint(bytes32[] calldata _proof) external payable verifyAllowList(_proof) verifyMaxSupply verifyPublicMints verifyPresaleMax verifyEthAmount nonReentrant {
     function presaleMint(bytes32[] calldata _proof) external payable {
-        console2.logAddress(msg.sender);
         require(MerkleProof.verify(_proof, merkleRoot, keccak256(abi.encodePacked(msg.sender))), "Address not in allow list");
-        _safeMint(msg.sender, _tokenIdCount.current());
+        uint256 currentId = _tokenIdCount.current();
         _tokenIdCount.increment();
+        _teamMintCount.increment();
+        _safeMint(msg.sender, currentId);
     }
 
-    function admint() external payable onlyOwner {}
+    function admint(address[] memory recipients) external payable onlyOwner verifyTeamMints(recipients.length) {
+        for (uint256 i = 0; i < recipients.length; i++) {
+            uint256 currentId = _tokenIdCount.current();
+            _tokenIdCount.increment();
+            _safeMint(recipients[i], currentId);
+        }
+    }
 
     // ===== Allowlist =====
     function setMerkleRoot(bytes32 _merkleRoot) public onlyOwner {
