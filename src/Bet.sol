@@ -78,20 +78,20 @@ contract Bet is Ownable, ReentrancyGuard {
 
     function handleOddsPayoutFavorite(int pickOdds, uint betAmount, address payable betterAddress) internal nonReentrant {
         uint payoutAmount = uint(int(betAmount) / (-1 * pickOdds / 100));
-        earningsTotal += payoutAmount;
+        earningsTotal += payoutAmount + betAmount;
         earnings[betterAddress] = payoutAmount;
     }
 
     function handleOddsPayoutUnderdog(int pickOdds, uint betAmount, address payable betterAddress) internal nonReentrant {
         uint payoutAmount = uint(int(betAmount) * (pickOdds / 100));
-        earningsTotal += payoutAmount;
+        earningsTotal += payoutAmount + betAmount;
         earnings[betterAddress] = payoutAmount;
     }
 
     function handleNoOddsPayout(uint betAmount, uint256 winnerBetsAmount, uint256 loserBetsAmount, address payable betterAddress) internal nonReentrant {
         uint percentValue = betAmount /  winnerBetsAmount;
         uint payoutAmount = loserBetsAmount * percentValue;
-        earningsTotal += payoutAmount;
+        earningsTotal += payoutAmount + betAmount;
         earnings[betterAddress] = payoutAmount;
     }
 
