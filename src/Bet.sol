@@ -34,9 +34,9 @@ contract Bet is Ownable, ReentrancyGuard {
     address payable[] public betterAddresses;
     address payable[] public betterAddressesTwo;
 
-    constructor(string memory _pickOne, string memory _pickTwo) {
-        picks[0] = Pick(_pickOne,"", false, 0, 0);
-        picks[1] = Pick(_pickTwo,"", false, 0, 0);
+    constructor(string memory _pickOne, string imageUrl, string memory _pickTwo, string pickTwoUrl) {
+        picks[0] = Pick(_pickOne,imageUrl,  false, 0, 0);
+        picks[1] = Pick(_pickTwo,pickTwoUrl, false, 0, 0);
         setStatus(Status.Open);
     }
 
