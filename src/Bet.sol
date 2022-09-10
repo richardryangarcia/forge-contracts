@@ -20,18 +20,17 @@ contract Bet is Ownable, ReentrancyGuard {
         string name;
         string imageUrl;
         bool winner;
-        uint256 odds;
+        int odds;
         uint256 totalBetAmount;
     }
 
     Status private status;
     Pick[2] public picks;
     uint256 public total;
-    Counters.Counter public pickOneBetCount;
-    Counters.Counter public pickTwoBetCount;
     mapping(address => uint256) pickOneBetAmounts;
     mapping(address => uint256) pickTwoBetAmounts;
     mapping(address => uint256) earnings;
+    uint256 public earningsTotal; 
     address payable[] public betterAddresses;
     address payable[] public betterAddressesTwo;
 
@@ -45,7 +44,7 @@ contract Bet is Ownable, ReentrancyGuard {
         setStatus(Status.Closed);
     }
 
-    function updateOdds(uint256 pickOneOdds, uint256 pickTwoOdds) public onlyOwner {
+    function updateOdds(int pickOneOdds, int pickTwoOdds) public onlyOwner {
         picks[0].odds = pickOneOdds;
         picks[1].odds = pickTwoOdds;
     }
@@ -55,21 +54,69 @@ contract Bet is Ownable, ReentrancyGuard {
         require(_winner == 0 || _winner == 2, "Winner selection must be 0 or 1");
         setStatus(Status.Ended);
         picks[_winner].winner = true;
+        handleAllocations(_winner);
         handlePayout(_winner);
     }
 
-    function handlePayout(uint256 pick) internal nonReentrant {
+    function handlePayout(uint256 pick ) internal nonReentrant {
+        if ( pick == 0 ){
+            for (uint i = 0; i < betterAddresses.length; i++) { 
+                uint percentage = picks[1].totalBetAmount / earningsTotal;
+                uint finalEarnings = earnings[betterAddresses[i]] * percentage;
+                (bool success,) = betterAddresses[i].call{value: finalEarnings}("");
+                require(success, "failed to send eth");
+            } 
+        } else {
+            for (uint i = 0; i < betterAddressesTwo.length; i++) { 
+                uint percentage = picks[0].totalBetAmount / earningsTotal;
+                uint finalEarnings = earnings[betterAddresses[i]] * percentage;
+               (bool success,) =  betterAddressesTwo[i].call{value: finalEarnings}("");
+               require(success, "failed to send eth");
+            } 
+        }
+    }
+
+    function handleOddsPayoutFavorite(int pickOdds, uint betAmount, address payable betterAddress) internal nonReentrant {
+        uint payoutAmount = uint(int(betAmount) / (-1 * pickOdds / 100));
+        earningsTotal += payoutAmount;
+        earnings[betterAddress] = payoutAmount;
+    }
+
+    function handleOddsPayoutUnderdog(int pickOdds, uint betAmount, address payable betterAddress) internal nonReentrant {
+        uint payoutAmount = uint(int(betAmount) * (pickOdds / 100));
+        earningsTotal += payoutAmount;
+        earnings[betterAddress] = payoutAmount;
+    }
+
+    function handleNoOddsPayout(uint betAmount, uint256 winnerBetsAmount, uint256 loserBetsAmount, address payable betterAddress) internal nonReentrant {
+        uint percentValue = betAmount /  winnerBetsAmount;
+        uint payoutAmount = loserBetsAmount * percentValue;
+        earningsTotal += payoutAmount;
+        earnings[betterAddress] = payoutAmount;
+    }
+
+    function handleAllocations(uint256 pick) internal nonReentrant {
         if ( pick == 0 ){
             for (uint i = 0; i < betterAddresses.length; i++) {
-                uint256 percentValue = pickOneBetAmounts[betterAddresses[i]] /  picks[0].totalBetAmount; //percentage deposited
-                earnings[betterAddresses[i]] = picks[1].totalBetAmount * percentValue; // amount earned
+                if (picks[0].odds > 0) {
+                    handleOddsPayoutUnderdog(picks[0].odds, pickOneBetAmounts[betterAddresses[i]], betterAddresses[i]);
+                } else if (picks[0].odds < 0) {
+                    handleOddsPayoutFavorite(picks[0].odds, pickOneBetAmounts[betterAddresses[i]], betterAddresses[i]);
+                } else {
+                    handleNoOddsPayout(pickOneBetAmounts[betterAddresses[i]], picks[0].totalBetAmount, picks[1].totalBetAmount, betterAddresses[i]);
+                }
 
                 // payout both betamount + earnings
             }
         } else {
             for (uint i = 0; i < betterAddressesTwo.length; i++) {
-                uint256 percentValue = pickTwoBetAmounts[betterAddressesTwo[i]] /  picks[1].totalBetAmount;
-                earnings[betterAddressesTwo[i]] = picks[0].totalBetAmount * percentValue;
+                if (picks[1].odds > 0) {
+                    handleOddsPayoutUnderdog(picks[1].odds, pickTwoBetAmounts[betterAddressesTwo[i]], betterAddressesTwo[i]);
+                } else if (picks[0].odds < 0) {
+                    handleOddsPayoutFavorite(picks[1].odds, pickTwoBetAmounts[betterAddressesTwo[i]], betterAddressesTwo[i]);
+                } else {
+                    handleNoOddsPayout(pickTwoBetAmounts[betterAddressesTwo[i]], picks[1].totalBetAmount, picks[0].totalBetAmount, betterAddressesTwo[i]);
+                }
 
                 // payout both betamount + earnings
             }
@@ -85,14 +132,12 @@ contract Bet is Ownable, ReentrancyGuard {
             picks[0].totalBetAmount += _amount;
             pickOneBetAmounts[msg.sender] += _amount;
             if (pickOneBetAmounts[msg.sender] == 0) { // handle new better address
-                pickOneBetCount.increment();
                 addBetterAddress(payable(msg.sender));
             }
         } else {
             picks[1].totalBetAmount += _amount; 
             pickTwoBetAmounts[msg.sender] += _amount;
             if (pickTwoBetAmounts[msg.sender] == 0) { // handle new better address
-                pickTwoBetCount.increment();
                 addBetterAddressTwo(payable(msg.sender));
             }
         }
@@ -109,13 +154,10 @@ contract Bet is Ownable, ReentrancyGuard {
     function withdraw(address payable payee) public virtual nonReentrant onlyOwner {
         require(status == Status.Ended, "Status must be ended to disperse balances");
 
-        // uint256 payment = _deposits[payee];
+        address payable payableOwner = payable(owner());
+        (bool success, ) = payableOwner.call{value: 1}("");
 
-        // _deposits[payee] = 0;
-
-        // payee.sendValue(payment);
-
-        // emit Withdrawn(payee, payment);
+        require(success, "failed to withdraw eth");
     }
 
 
