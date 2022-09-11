@@ -3,7 +3,7 @@ pragma solidity ^0.8.13;
 
 import "forge-std/Script.sol";
 import "../src/Edition.sol";
-import "../src/Escrow.sol";
+import "../src/Bet.sol";
 
 // source .env
 
